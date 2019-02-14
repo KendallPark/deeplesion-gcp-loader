@@ -15,6 +15,7 @@ import (
 
 var (
 	bucketName = flag.String("bucket-name", "deeplesion-data", "the name of the GCP bucket you want to upload to")
+	resumeAt = flag.Int("resume-at", 1, "image folder number at which you want to resume the upload (in case you need to resume a download)")
 	parallel = flag.Bool("parallel", false, "Download and upload data in parallel, generally requires more disk space")
 	removeFiles = flag.Bool("remove-files", false, "remove each file after download and upload (only if parallel=false)")
 )
@@ -32,6 +33,9 @@ func main() {
 // Begin starts the download, unzip, and upload process with no concurrency
 func Begin() {
 	for i, url := range DownloadURLs {
+		if i + 1 < resumeAt {
+			continue
+		}
 		fn := fmt.Sprintf("Images_png_%02d.zip", i + 1)
 		FetchUploadAndHandleFile(fn, url, *bucketName, nil)
 		if *removeFiles {
@@ -44,6 +48,9 @@ func Begin() {
 func BeginConcurrent() {
 	var wg sync.WaitGroup
 	for i, url := range DownloadURLs {
+		if i + 1 < resumeAt {
+			continue
+		}
 		fn := fmt.Sprintf("Images_png_%02d.zip", i + 1)
 		wg.Add(1)
 		go FetchUploadAndHandleFile(fn, url, *bucketName, &wg)
